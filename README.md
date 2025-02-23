@@ -1,93 +1,85 @@
-# Natural-Language-to-SQL-using-RAG
-Convert natural language queries into SQL using Google's Gemini Pro API and semantic search. Get instant results from your MySQL database through an intuitive chat interface.
-Features
+# Natural Language to SQL using RAG
 
-Natural language to SQL conversion
-Automatic schema and relationship understanding
-Real-time query execution
-Query history tracking
-SQL injection prevention
-Web-based chat interface
+A RAG-powered system that converts natural language questions into accurate SQL queries. Leveraging ChromaDB for semantic retrieval and Gemini Pro for generation, the system ensures precise SQL queries by augmenting prompts with actual database schema and relationships.
 
-RAG Architecture
-This project implements Retrieval-Augmented Generation (RAG) for accurate SQL generation:
+## Features
 
-Retrieval:
+- Natural language to SQL conversion using RAG architecture
+- Automatic schema and relationship understanding
+- Real-time query execution
+- Query history tracking
+- SQL injection prevention
+- Web-based chat interface
 
-ChromaDB stores embeddings of database schema and relationships
-Semantic search retrieves relevant table structures and connections
+## RAG Architecture
 
+The system implements Retrieval-Augmented Generation (RAG) for accurate SQL generation:
 
-Augmentation:
+1. **Retrieval**: 
+   - ChromaDB stores embeddings of database schema and relationships
+   - Semantic search retrieves relevant table structures and connections
+   
+2. **Augmentation**:
+   - Retrieved context is formatted into structured prompts
+   - Includes exact table names, columns, and relationships
+   
+3. **Generation**:
+   - Gemini Pro generates SQL using augmented context
+   - Ensures accurate table/column names and proper JOINs
+   - Prevents hallucination of non-existent database structures
 
-Retrieved context is formatted into structured prompts
-Includes exact table names, columns, and relationships
+## How It Works
 
+1. **Query Processing**
+   - User enters natural language question
+   - System retrieves relevant database context
+   - Gemini Pro generates optimized SQL query
+   - Query is validated and executed
+   - Results are returned to user
 
-Generation:
+2. **Schema Understanding**
+   - ChromaDB stores database schema embeddings
+   - Semantic search finds relevant tables
+   - Relationship mapping ensures proper JOINs
 
-Gemini Pro generates SQL using augmented context
-Ensures accurate table/column names and proper JOINs
-Prevents hallucination of non-existent database structures
+## Technology Stack
 
+- **Backend**: Flask (Python)
+- **Databases**: 
+  - MySQL (Main database)
+  - MongoDB (Query history)
+  - ChromaDB (Vector store for RAG)
+- **LLM**: Google Gemini Pro
+- **Frontend**: HTML/CSS/JavaScript
 
+## Quick Start
 
-How It Works
+1. Set up environment:
+```bash
+pip install -r requirements.txt
+```
 
-Query Processing
-
-User enters natural language question
-System retrieves relevant database context
-Gemini Pro generates optimized SQL query
-Query is validated and executed
-Results are returned to user
-
-
-Schema Understanding
-
-ChromaDB stores database schema embeddings
-Semantic search finds relevant tables
-Relationship mapping ensures proper JOINs
-
-
-
-Technology Stack
-
-Backend: Flask (Python)
-Databases:
-
-MySQL (Main database)
-MongoDB (Query history)
-ChromaDB (Vector store for RAG)
-
-
-LLM: Google Gemini Pro
-Frontend: HTML/CSS/JavaScript
-
-Quick Start
-
-Set up environment:
-
-bashCopypip install -r requirements.txt
-
-Configure credentials in .env:
-
-CopyGEMINI_API_KEY=your_key
+2. Configure credentials in `.env`:
+```
+GEMINI_API_KEY=your_key
 MYSQL_CONFIG=your_config
 MONGO_URI=your_uri
+```
 
-Run the application:
+3. Run the application:
+```bash
+python app.py
+```
 
-bashCopypython app.py
+4. Visit `http://localhost:5000` in your browser
 
-Visit http://localhost:5000 in your browser
+## Example Usage
 
-Example Usage
 Enter questions like:
+- "Show all employees in Parks department"
+- "What is Leslie's current position?"
+- "List projects with their teams"
 
-"Show all employees in Parks department"
-"What is Leslie's current position?"
-"List projects with their teams"
+## License
 
-License
 MIT License
