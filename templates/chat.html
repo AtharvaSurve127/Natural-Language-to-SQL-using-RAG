@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+        .chat-messages {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+        .user-message {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        .bot-message {
+            background: #e9ecef;
+            color: #333;
+        }
+        .input-container {
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .project-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">SQL Chatbot</div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="input-container">
+            <select id="project-select" class="project-select">
+                <option value="default_project">Default Project</option>
+                <!-- Add more project options as needed -->
+            </select>
+            <textarea id="message-input" rows="2" placeholder="Type your SQL question..."></textarea>
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="addDataSource()">Add Data Source</button>
+            <button id="generate-er-btn" type="button">Generate ER</button>
+        </div>
+    </div>
+    <div id="er-diagram"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const projectSelect = document.getElementById('project-select');
+
+        function formatResponse(data) {
+            if (typeof data === 'object' && data.length > 0) {
+                // Handle array of objects (e.g., [{"age": 44}])
+                if (data.length === 1 && Object.keys(data[0]).length === 1) {
+                    const key = Object.keys(data[0])[0];
+                    const value = data[0][key];
+                    return `The ${key} is ${value}.`;
+                } else {
+                    // For multiple fields or rows, create a simple sentence
+                    return data.map(item => {
+                        return Object.entries(item).map(([k, v]) => `The ${k} is ${v}`).join(", ");
+                    }).join(" ");
+                }
+            } else if (typeof data === 'string') {
+                return data; // Handle error messages or plain text
+            }
+            return JSON.stringify(data, null, 2); // Fallback to raw JSON if format fails
+        }
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+            
+            if (typeof message === 'object' && !Array.isArray(message)) {
+                // Handle error objects or other non-array objects
+                messageDiv.textContent = message.error || JSON.stringify(message, null, 2);
+            } else {
+                // Format the response for bot messages
+                const formattedMessage = isUser ? message : formatResponse(message);
+                messageDiv.textContent = formattedMessage;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            const project = projectSelect.value;
+
+            if (!message) return;
+
+            addMessage(message, true);
+            messageInput.value = '';
+
+            try {
+                const response = await fetch('/get_response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        project_name: project
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`);
+                } else {
+                    addMessage(data.response);
+                }
+            } catch (error) {
+                addMessage(`Error: ${error.message}`);
+            }
+        }
+
+        async function addDataSource() {
+            const project = projectSelect.value;
+
+            try {
+                const response = await fetch('/add_data_source', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_name: project
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    addMessage('Data source added successfully!');
+                } else {
+                    addMessage(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                addMessage(`Error adding data source: ${error.message}`);
+            }
+        }
+
+        // Enable Enter key to send message
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Generate ER button logic
+        document.getElementById('generate-er-btn').onclick = function() {
+            // You may want to get the current database name from your app state
+            const databaseName = 'parks_and_recreation'; // Or make this dynamic if needed
+            fetch('/get_er_diagram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ database_name: databaseName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.mermaid) {
+                    const uniqueId = 'theERDiagram_' + Date.now();
+                    mermaid.render(uniqueId, data.mermaid)
+                        .then(({svg}) => {
+                            document.getElementById('er-diagram').innerHTML = svg;
+                        });
+                } else {
+                    document.getElementById('er-diagram').innerText = 'Failed to generate ER diagram.';
+                }
+            })
+            .catch(() => {
+                document.getElementById('er-diagram').innerText = 'Error generating ER diagram.';
+            });
+        };
+    </script>
+</body>
+</html>
